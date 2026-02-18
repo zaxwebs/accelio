@@ -9,7 +9,7 @@ use Accelio\Http\Response;
 
 final class Router
 {
-    /** @var array<string, array<string, callable>> */
+    /** @var array<string, array<int, array{path: string, handler: callable}>> */
     private array $routes = [];
 
     public function get(string $path, callable $handler): void
@@ -22,35 +22,89 @@ final class Router
         $this->add('POST', $path, $handler);
     }
 
+    public function put(string $path, callable $handler): void
+    {
+        $this->add('PUT', $path, $handler);
+    }
+
+    public function patch(string $path, callable $handler): void
+    {
+        $this->add('PATCH', $path, $handler);
+    }
+
+    public function delete(string $path, callable $handler): void
+    {
+        $this->add('DELETE', $path, $handler);
+    }
+
     public function add(string $method, string $path, callable $handler): void
     {
-        $this->routes[strtoupper($method)][$path] = $handler;
+        $method = strtoupper($method);
+        $this->routes[$method][] = ['path' => $path, 'handler' => $handler];
     }
 
     public function dispatch(Request $request): Response
     {
         $method = $request->method();
         $path = $request->path();
-        $handler = $this->routes[$method][$path] ?? null;
+        $routes = $this->routes[$method] ?? [];
 
-        if ($handler === null) {
-            return Response::json([
-                'error' => 'Not Found',
-                'method' => $method,
-                'path' => $path,
-            ], 404);
+        foreach ($routes as $route) {
+            $params = $this->match($route['path'], $path);
+            if ($params === null) {
+                continue;
+            }
+
+            $result = ($route['handler'])($request->withRouteParams($params));
+
+            if ($result instanceof Response) {
+                return $result;
+            }
+
+            if (is_array($result)) {
+                return Response::json($result);
+            }
+
+            return Response::text((string) $result);
         }
 
-        $result = $handler($request);
+        return Response::json([
+            'error' => 'Not Found',
+            'method' => $method,
+            'path' => $path,
+        ], 404);
+    }
 
-        if ($result instanceof Response) {
-            return $result;
+    /**
+     * @return array<string, string>|null
+     */
+    private function match(string $routePath, string $requestPath): ?array
+    {
+        if ($routePath === $requestPath) {
+            return [];
         }
 
-        if (is_array($result)) {
-            return Response::json($result);
+        $pattern = preg_replace_callback(
+            '/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/',
+            static fn (array $matches): string => '(?P<' . $matches[1] . '>[^/]+)',
+            $routePath,
+        );
+
+        if (!is_string($pattern)) {
+            return null;
         }
 
-        return Response::text((string) $result);
+        if (!preg_match('#^' . $pattern . '$#', $requestPath, $matches)) {
+            return null;
+        }
+
+        $params = [];
+        foreach ($matches as $key => $value) {
+            if (is_string($key)) {
+                $params[$key] = urldecode($value);
+            }
+        }
+
+        return $params;
     }
 }
