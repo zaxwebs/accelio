@@ -1,0 +1,17 @@
+{
+  "name": "accelio/framework",
+  "description": "Accelio: a lean PHP framework built for AI-assisted development.",
+  "type": "project",
+  "require": {
+    "php": "^8.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "Accelio\\": "src/"
+    }
+  },
+  "scripts": {
+    "serve": "php -S 127.0.0.1:8080 -t public",
+    "test": "php tests/smoke.php"
+  }
+}
