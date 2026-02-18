@@ -9,18 +9,18 @@ use InvalidArgumentException;
 
 final class Container
 {
-    /** @var array<string, Closure|object|string> */
+    /** @var array<string, object|string> */
     private array $bindings = [];
 
     /** @var array<string, object> */
     private array $singletons = [];
 
-    public function bind(string $id, Closure|object|string $concrete): void
+    public function bind(string $id, object|string $concrete): void
     {
         $this->bindings[$id] = $concrete;
     }
 
-    public function singleton(string $id, Closure|object|string $concrete): void
+    public function singleton(string $id, object|string $concrete): void
     {
         $this->bind($id, $concrete);
 
