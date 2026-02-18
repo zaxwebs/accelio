@@ -6,6 +6,7 @@ Accelio is a **modern, lean PHP framework** optimized for **AI-assisted developm
 - **Convention-first folder layout** with explicit class names.
 - **No magic**: route handlers are plain callables, services are explicit, and config is simple arrays.
 - **Type-safe signatures** and docblocks that are easy for code models to infer.
+- **Built for modern PHP** with a PHP `^8.4` runtime baseline.
 
 ## Why this is LLM-friendly
 
@@ -45,12 +46,37 @@ src/
     helpers.php
 ```
 
+## Common API features included
+
+- Route params: `/users/{id}` then `$request->route('id')`.
+- JSON body parsing for `application/json` requests.
+- Query + body merge via `$request->all()`.
+- Header lookup via `$request->header('x-trace-id')`.
+- Common response helpers: `json()`, `created()`, and `no_content()`.
+- HTTP verbs: `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`.
+
 ## Add a route
 
 Edit `routes/web.php`:
 
 ```php
 $router->get('/hello', fn (Request $request) => response('Hello from Accelio!'));
+```
+
+Route parameters:
+
+```php
+$router->get('/users/{id}', fn (Request $request) => json([
+    'id' => $request->route('id'),
+]));
+```
+
+JSON request body:
+
+```php
+$router->post('/echo', fn (Request $request) => created([
+    'received' => $request->body(),
+]));
 ```
 
 ## Add a service
