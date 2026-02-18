@@ -9,8 +9,13 @@ use Accelio\Http\Response;
 
 final class Router
 {
-    /** @var array<string, array<int, array{path: string, handler: callable}>> */
     private array $routes = [];
+
+    /** @return array<string, array<int, array{path: string, handler: callable}>> */
+    public function getRoutes(): array
+    {
+        return $this->routes;
+    }
 
     public function get(string $path, callable $handler): void
     {

@@ -23,6 +23,16 @@ final class Request
 
     public static function capture(): self
     {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            // Rotate flash input
+            $_SESSION['_old'] = $_SESSION['_flash_input'] ?? [];
+            unset($_SESSION['_flash_input']);
+
+            // Rotate flash data
+            $_SESSION['_flash_current'] = $_SESSION['_flash'] ?? [];
+            unset($_SESSION['_flash']);
+        }
+
         $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
         // Robust URI detection for different server environments
@@ -113,6 +123,45 @@ final class Request
     public function route(string $key, mixed $default = null): mixed
     {
         return $this->routeParams[$key] ?? $default;
+    }
+
+    public function session(string $key = null, mixed $default = null): mixed
+    {
+        if ($key === null) {
+            return $_SESSION;
+        }
+
+        return $_SESSION[$key] ?? $default;
+    }
+
+    /**
+     * Get flashed data from the session.
+     */
+    public function old(string $key, mixed $default = null): mixed
+    {
+        return $_SESSION['_old'][$key] ?? $default;
+    }
+
+    /**
+     * Get current flash data.
+     */
+    public function flashData(string $key = null, mixed $default = null): mixed
+    {
+        if ($key === null) {
+            return $_SESSION['_flash_current'] ?? [];
+        }
+
+        return $_SESSION['_flash_current'][$key] ?? $default;
+    }
+
+    /**
+     * Flash current input to the session.
+     */
+    public function flash(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $_SESSION['_flash_input'] = $this->all();
+        }
     }
 
     /**

@@ -21,8 +21,17 @@ final class Kernel
         require $this->app->basePath('routes/web.php');
     }
 
+    public function router(): Router
+    {
+        return $this->router;
+    }
+
     public function handle(): Response
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
         try {
             $request = Request::capture();
             return $this->router->dispatch($request);

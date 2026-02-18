@@ -20,9 +20,11 @@ final class Response
         return new self($content, $status, ['Content-Type' => 'text/plain; charset=utf-8']);
     }
 
-    /**
-     * @param array<mixed> $data
-     */
+    public static function html(string $content, int $status = 200): self
+    {
+        return new self($content, $status, ['Content-Type' => 'text/html; charset=utf-8']);
+    }
+
     public static function json(array $data, int $status = 200): self
     {
         return new self(
@@ -30,6 +32,35 @@ final class Response
             status: $status,
             headers: ['Content-Type' => 'application/json; charset=utf-8'],
         );
+    }
+
+    public static function redirect(string $url, int $status = 302): self
+    {
+        return new self(
+            content: '',
+            status: $status,
+            headers: ['Location' => $url],
+        );
+    }
+
+    /**
+     * Flash data to the session (useful for redirects).
+     *
+     * @param string|array<string, mixed> $key
+     */
+    public function with(string|array $key, mixed $value = null): self
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            if (is_array($key)) {
+                foreach ($key as $k => $v) {
+                    $_SESSION['_flash'][$k] = $v;
+                }
+            } else {
+                $_SESSION['_flash'][$key] = $value;
+            }
+        }
+
+        return $this;
     }
 
     public function send(): void
@@ -51,5 +82,10 @@ final class Response
     public function status(): int
     {
         return $this->status;
+    }
+
+    public function header(string $name): ?string
+    {
+        return $this->headers[$name] ?? null;
     }
 }
