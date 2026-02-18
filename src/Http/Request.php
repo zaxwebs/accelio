@@ -24,8 +24,20 @@ final class Request
     public static function capture(): self
     {
         $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+
+        // Robust URI detection for different server environments
+        $uri = $_SERVER['PATH_INFO']
+            ?? $_SERVER['REQUEST_URI']
+            ?? '/';
+
+        // Strip query string and ensure leading slash
         $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+        $path = '/' . ltrim($path, '/');
+
+        // Remove index.php from path if it exists (e.g. from mod_rewrite or manual entry)
+        $path = preg_replace('/^index\.php\/?/', '/', ltrim($path, '/'));
+        $path = '/' . ltrim($path, '/');
+
         $rawBody = file_get_contents('php://input') ?: '';
 
         return new self(
