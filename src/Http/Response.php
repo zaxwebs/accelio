@@ -25,13 +25,27 @@ final class Response
         return new self($content, $status, ['Content-Type' => 'text/html; charset=utf-8']);
     }
 
-    public static function json(array $data, int $status = 200): self
+    public static function json(mixed $data, int $status = 200): self
     {
         return new self(
-            content: json_encode($data, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            content: json_encode(self::normalizeJsonData($data), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
             status: $status,
             headers: ['Content-Type' => 'application/json; charset=utf-8'],
         );
+    }
+
+
+    private static function normalizeJsonData(mixed $data): mixed
+    {
+        if ($data instanceof \JsonSerializable) {
+            return $data->jsonSerialize();
+        }
+
+        if (is_object($data)) {
+            return get_object_vars($data);
+        }
+
+        return $data;
     }
 
     public static function redirect(string $url, int $status = 302): self

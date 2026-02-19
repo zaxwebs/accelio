@@ -6,6 +6,8 @@ namespace Accelio\Core;
 
 use Closure;
 use InvalidArgumentException;
+use ReflectionClass;
+use ReflectionNamedType;
 
 final class Container
 {
@@ -68,6 +70,44 @@ final class Container
             throw new InvalidArgumentException("Service [$id] is not instantiable.");
         }
 
-        return new $concrete();
+        return $this->build($concrete);
+    }
+
+    private function build(string $class): object
+    {
+        $reflection = new ReflectionClass($class);
+
+        if (!$reflection->isInstantiable()) {
+            throw new InvalidArgumentException("Service [$class] is not instantiable.");
+        }
+
+        $constructor = $reflection->getConstructor();
+        if ($constructor === null || $constructor->getNumberOfParameters() === 0) {
+            return new $class();
+        }
+
+        $dependencies = [];
+
+        foreach ($constructor->getParameters() as $parameter) {
+            $type = $parameter->getType();
+
+            if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
+                $dependencies[] = $this->get($type->getName());
+                continue;
+            }
+
+            if ($parameter->isDefaultValueAvailable()) {
+                $dependencies[] = $parameter->getDefaultValue();
+                continue;
+            }
+
+            throw new InvalidArgumentException(sprintf(
+                'Unable to resolve dependency [$%s] for service [%s].',
+                $parameter->getName(),
+                $class,
+            ));
+        }
+
+        return $reflection->newInstanceArgs($dependencies);
     }
 }
