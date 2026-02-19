@@ -11,7 +11,8 @@ test('home page returns 200', function () {
 test('home page contains welcome message', function () {
     $response = $this->get('/');
 
-    expect($response->content())->toContain('Accelio');
+    expect($response->content())->toContain('Accelio')
+        ->and($response->content())->toContain('Lean PHP framework');
 });
 
 test('404 page', function () {
