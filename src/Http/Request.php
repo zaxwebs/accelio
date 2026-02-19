@@ -95,8 +95,12 @@ final class Request
         return $this->query[$key] ?? $default;
     }
 
-    public function input(string $key, mixed $default = null): mixed
+    public function input(?string $key = null, mixed $default = null): mixed
     {
+        if ($key === null) {
+            return $this->all();
+        }
+
         return $this->body[$key] ?? $default;
     }
 

@@ -1,7 +1,6 @@
 <?php
 
 use Accelio\Core\Container;
-use Accelio\Core\Application;
 
 beforeEach(function () {
     $this->container = new Container();
@@ -26,8 +25,24 @@ test('it can bind and resolve a singleton', function () {
     expect($instance1)->toBe($instance2);
 });
 
+test('it can auto resolve constructor dependencies', function () {
+    $resolved = $this->container->get(ContainerTestService::class);
+
+    expect($resolved)->toBeInstanceOf(ContainerTestService::class)
+        ->and($resolved->repository)->toBeInstanceOf(ContainerTestRepository::class);
+});
+
 test('it throws exception if service is not instantiable', function () {
     $this->container->bind('non_existent', 'NonExistentClass');
 
     expect(fn () => $this->container->get('non_existent'))->toThrow(InvalidArgumentException::class);
 });
+
+final class ContainerTestService
+{
+    public function __construct(public readonly ContainerTestRepository $repository) {}
+}
+
+final class ContainerTestRepository
+{
+}
