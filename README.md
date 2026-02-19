@@ -34,7 +34,7 @@ Run the test suite with:
 composer test
 ```
 
-See [LLM_TESTING_GUIDE.md](LLM_TESTING_GUIDE.md) for detailed testing instructions.
+
 
 ## Quick start
 

@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $name ?></title>
     <style>
-        body { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; padding: 2rem; line-height: 1.5; color: #333; }
-        header { margin-bottom: 2rem; }
+        body { font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace; padding: 1rem; line-height: 1.5; color: #333; }
     </style>
 </head>
 <body>
