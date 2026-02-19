@@ -24,39 +24,25 @@ final class Request
     public static function capture(): self
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
-            // Rotate flash input
             $_SESSION['_old'] = $_SESSION['_flash_input'] ?? [];
             unset($_SESSION['_flash_input']);
 
-            // Rotate flash data
             $_SESSION['_flash_current'] = $_SESSION['_flash'] ?? [];
             unset($_SESSION['_flash']);
         }
 
-        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-
-        // Robust URI detection for different server environments
-        $uri = $_SERVER['PATH_INFO']
-            ?? $_SERVER['REQUEST_URI']
-            ?? '/';
-
-        // Strip query string and ensure leading slash
-        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
-        $path = '/' . ltrim($path, '/');
-
-        // Remove index.php from path if it exists (e.g. from mod_rewrite or manual entry)
-        $path = preg_replace('/^index\.php\/?/', '/', ltrim($path, '/'));
-        $path = '/' . ltrim($path, '/');
-
         $rawBody = file_get_contents('php://input') ?: '';
+        $headers = self::captureHeaders();
+        $query = $_GET;
+        $body = self::captureBody($rawBody, $headers);
 
         return new self(
-            method: $method,
-            path: $path,
-            query: $_GET,
-            body: self::captureBody($rawBody),
+            method: self::resolveMethod($body, $headers),
+            path: self::resolvePath(),
+            query: $query,
+            body: $body,
             server: $_SERVER,
-            headers: self::captureHeaders(),
+            headers: $headers,
             rawBody: $rawBody,
         );
     }
@@ -125,6 +111,27 @@ final class Request
         return $this->routeParams[$key] ?? $default;
     }
 
+    public function ip(): string
+    {
+        return (string) ($this->header('x-forwarded-for') ?: $this->server('REMOTE_ADDR', '0.0.0.0'));
+    }
+
+    public function wantsJson(): bool
+    {
+        return str_contains(strtolower((string) $this->header('accept', '')), 'application/json');
+    }
+
+    public function bearerToken(): ?string
+    {
+        $authorization = (string) $this->header('authorization', '');
+
+        if (preg_match('/^Bearer\s+(.+)$/i', $authorization, $matches) !== 1) {
+            return null;
+        }
+
+        return trim($matches[1]);
+    }
+
     public function session(string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
@@ -134,17 +141,11 @@ final class Request
         return $_SESSION[$key] ?? $default;
     }
 
-    /**
-     * Get flashed data from the session.
-     */
     public function old(string $key, mixed $default = null): mixed
     {
         return $_SESSION['_old'][$key] ?? $default;
     }
 
-    /**
-     * Get current flash data.
-     */
     public function flashData(string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
@@ -154,14 +155,48 @@ final class Request
         return $_SESSION['_flash_current'][$key] ?? $default;
     }
 
-    /**
-     * Flash current input to the session.
-     */
     public function flash(): void
     {
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION['_flash_input'] = $this->all();
         }
+    }
+
+    private static function resolvePath(): string
+    {
+        $uri = $_SERVER['PATH_INFO'] ?? $_SERVER['REQUEST_URI'] ?? '/';
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+
+        $path = '/' . ltrim($path, '/');
+        $path = (string) preg_replace('#^/index\.php/?#', '/', $path);
+
+        if ($path !== '/') {
+            $path = rtrim($path, '/');
+        }
+
+        return $path;
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    private static function resolveMethod(array $body, array $headers): string
+    {
+        $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+        if ($method !== 'POST') {
+            return $method;
+        }
+
+        $override = $body['_method']
+            ?? $headers['x-http-method-override']
+            ?? null;
+
+        if (!is_string($override) || $override === '') {
+            return $method;
+        }
+
+        return strtoupper($override);
     }
 
     /**
@@ -180,30 +215,35 @@ final class Request
             $headers[$header] = $value;
         }
 
-        if (isset($_SERVER['CONTENT_TYPE']) && is_string($_SERVER['CONTENT_TYPE'])) {
-            $headers['content-type'] = $_SERVER['CONTENT_TYPE'];
+        foreach (['CONTENT_TYPE' => 'content-type', 'CONTENT_LENGTH' => 'content-length'] as $serverKey => $headerKey) {
+            if (isset($_SERVER[$serverKey]) && is_string($_SERVER[$serverKey])) {
+                $headers[$headerKey] = $_SERVER[$serverKey];
+            }
         }
 
         return $headers;
     }
 
     /**
+     * @param array<string, string> $headers
      * @return array<string, mixed>
      */
-    private static function captureBody(string $rawBody): array
+    private static function captureBody(string $rawBody, array $headers): array
     {
         if ($_POST !== []) {
             return $_POST;
         }
 
-        $contentType = strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? ''));
+        $contentType = strtolower((string) ($headers['content-type'] ?? ''));
 
         if (str_contains($contentType, 'application/json') && $rawBody !== '') {
             $decoded = json_decode($rawBody, true);
+            return is_array($decoded) ? $decoded : [];
+        }
 
-            if (is_array($decoded)) {
-                return $decoded;
-            }
+        if (str_contains($contentType, 'application/x-www-form-urlencoded') && $rawBody !== '') {
+            parse_str($rawBody, $parsed);
+            return is_array($parsed) ? $parsed : [];
         }
 
         return [];

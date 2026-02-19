@@ -63,6 +63,19 @@ final class Response
         return $this;
     }
 
+    public function withHeader(string $name, string $value): self
+    {
+        return new self($this->content, $this->status, [...$this->headers, $name => $value]);
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    public function withHeaders(array $headers): self
+    {
+        return new self($this->content, $this->status, [...$this->headers, ...$headers]);
+    }
+
     public function send(): void
     {
         http_response_code($this->status);

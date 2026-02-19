@@ -32,12 +32,12 @@ if (no_content()->status() !== 204) {
 }
 
 $router = new Router();
-$router->get('/users/{id}', fn (Request $request): array => ['id' => $request->route('id')]);
+$router->get('/users/{id}', fn (Request $request, string $id): array => ['id' => $id, 'pathId' => $request->route('id')]);
 $router->post('/echo', fn (Request $request): array => $request->body());
 
 $requestWithParam = new Request('GET', '/users/42', [], [], [], [], '');
 $routeResponse = $router->dispatch($requestWithParam);
-if ($routeResponse->status() !== 200 || $routeResponse->content() !== '{"id":"42"}') {
+if ($routeResponse->status() !== 200 || $routeResponse->content() !== '{"id":"42","pathId":"42"}') {
     fwrite(STDERR, "route param dispatch failed\n");
     exit(1);
 }
@@ -51,6 +51,12 @@ if ($jsonRequest->all()['name'] !== 'Ada' || $jsonRequest->all()['page'] !== 1 |
 $echoResponse = $router->dispatch($jsonRequest);
 if ($echoResponse->content() !== '{"name":"Ada"}') {
     fwrite(STDERR, "post route failed\n");
+    exit(1);
+}
+
+$methodNotAllowed = $router->dispatch(new Request('DELETE', '/echo', [], [], [], [], ''));
+if ($methodNotAllowed->status() !== 405 || $methodNotAllowed->header('Allow') !== 'POST') {
+    fwrite(STDERR, "405 handling failed\n");
     exit(1);
 }
 
