@@ -2,7 +2,7 @@
 
 Project: Accelio
 Repository root: /
-Primary language: PHP (>=8.4)
+Primary language: PHP (>=8.3)
 Purpose: A minimal, LLM-friendly PHP framework for API-first and traditional web apps.
 
 ## Quick start
@@ -48,5 +48,5 @@ Purpose: A minimal, LLM-friendly PHP framework for API-first and traditional web
 
 ## Notes for code generation
 - Follow the existing small-file, one-class-per-file style.
-- Maintain compatibility with PHP 8.4 baseline from `composer.json`.
+- Maintain compatibility with PHP 8.3 baseline from `composer.json`.
 - Prefer minimal, readable implementations over abstractions.

@@ -6,7 +6,7 @@ Accelio is a **modern, lean PHP framework** optimized for **AI-assisted developm
 - **Convention-first folder layout** with explicit class names.
 - **No magic**: route handlers are plain callables, services are explicit, and config is simple arrays.
 - **Type-safe signatures** and docblocks that are easy for code models to infer.
-- **Built for modern PHP** with a PHP `^8.4` runtime baseline.
+- **Built for modern PHP** with a PHP `^8.3` runtime baseline.
 
 ## Why this is LLM-friendly
 
