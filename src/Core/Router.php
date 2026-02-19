@@ -6,9 +6,13 @@ namespace Accelio\Core;
 
 use Accelio\Http\Request;
 use Accelio\Http\Response;
+use ReflectionFunction;
+use ReflectionMethod;
+use ReflectionNamedType;
 
 final class Router
 {
+    /** @var array<string, array<int, array{path: string, handler: callable}>> */
     private array $routes = [];
 
     /** @return array<string, array<int, array{path: string, handler: callable}>> */
@@ -45,32 +49,33 @@ final class Router
     public function add(string $method, string $path, callable $handler): void
     {
         $method = strtoupper($method);
-        $this->routes[$method][] = ['path' => $path, 'handler' => $handler];
+        $this->routes[$method][] = ['path' => $this->normalizePath($path), 'handler' => $handler];
     }
 
     public function dispatch(Request $request): Response
     {
         $method = $request->method();
         $path = $request->path();
-        $routes = $this->routes[$method] ?? [];
 
-        foreach ($routes as $route) {
+        foreach ($this->routes[$method] ?? [] as $route) {
             $params = $this->match($route['path'], $path);
             if ($params === null) {
                 continue;
             }
 
-            $result = ($route['handler'])($request->withRouteParams($params));
+            return $this->normalizeResponse(
+                $this->invokeHandler($route['handler'], $request->withRouteParams($params), $params),
+            );
+        }
 
-            if ($result instanceof Response) {
-                return $result;
-            }
-
-            if (is_array($result)) {
-                return Response::json($result);
-            }
-
-            return Response::text((string) $result);
+        $allowed = $this->allowedMethodsForPath($path);
+        if ($allowed !== []) {
+            return Response::json([
+                'error' => 'Method Not Allowed',
+                'method' => $method,
+                'path' => $path,
+                'allowed' => $allowed,
+            ], 405)->withHeader('Allow', implode(', ', $allowed));
         }
 
         return Response::json([
@@ -78,6 +83,77 @@ final class Router
             'method' => $method,
             'path' => $path,
         ], 404);
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    private function invokeHandler(callable $handler, Request $request, array $params): mixed
+    {
+        if (is_array($handler)) {
+            $reflection = new ReflectionMethod($handler[0], $handler[1]);
+        } else {
+            $reflection = new ReflectionFunction($handler);
+        }
+
+        $args = [];
+        foreach ($reflection->getParameters() as $parameter) {
+            $type = $parameter->getType();
+
+            if ($type instanceof ReflectionNamedType && !$type->isBuiltin() && $type->getName() === Request::class) {
+                $args[] = $request;
+                continue;
+            }
+
+            $name = $parameter->getName();
+            if (array_key_exists($name, $params)) {
+                $args[] = $params[$name];
+                continue;
+            }
+
+            if ($parameter->isDefaultValueAvailable()) {
+                $args[] = $parameter->getDefaultValue();
+                continue;
+            }
+
+            $args[] = null;
+        }
+
+        return $handler(...$args);
+    }
+
+    private function normalizeResponse(mixed $result): Response
+    {
+        if ($result instanceof Response) {
+            return $result;
+        }
+
+        if (is_array($result)) {
+            return Response::json($result);
+        }
+
+        return Response::text((string) $result);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function allowedMethodsForPath(string $path): array
+    {
+        $allowed = [];
+
+        foreach ($this->routes as $method => $routes) {
+            foreach ($routes as $route) {
+                if ($this->match($route['path'], $path) !== null) {
+                    $allowed[] = $method;
+                    break;
+                }
+            }
+        }
+
+        sort($allowed);
+
+        return $allowed;
     }
 
     /**
@@ -99,7 +175,12 @@ final class Router
             return null;
         }
 
-        if (!preg_match('#^' . $pattern . '$#', $requestPath, $matches)) {
+        $escaped = preg_replace('/\//', '\\/', $pattern);
+        if (!is_string($escaped)) {
+            return null;
+        }
+
+        if (!preg_match('/^' . $escaped . '$/', $requestPath, $matches)) {
             return null;
         }
 
@@ -111,5 +192,16 @@ final class Router
         }
 
         return $params;
+    }
+
+    private function normalizePath(string $path): string
+    {
+        $normalized = '/' . ltrim($path, '/');
+
+        if ($normalized !== '/') {
+            $normalized = rtrim($normalized, '/');
+        }
+
+        return $normalized;
     }
 }

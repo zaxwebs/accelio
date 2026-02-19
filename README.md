@@ -53,10 +53,10 @@ src/
 
 - **Traditional Web**: View rendering, global sessions, and PRG (Post-Redirect-Get) support.
 - **API-First**: JSON body parsing, route parameters, and header lookups.
-- **Route params**: `/users/{id}` then `$request->route('id')`.
+- **Route params**: `/users/{id}` then either `$request->route('id')` or typed closure args (`fn (string $id) => ...`).
 - **Query + body merge**: Access via `$request->all()` or `$request->input('key')`.
 - **Response helpers**: `json()`, `view()`, `redirect()`, `back()`, `created()`, and `no_content()`.
-- **HTTP verbs**: `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`.
+- **HTTP verbs**: `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` with automatic `405 Method Not Allowed` responses.
 
 ## Common Examples
 
