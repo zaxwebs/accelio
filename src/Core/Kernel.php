@@ -26,14 +26,14 @@ final class Kernel
         return $this->router;
     }
 
-    public function handle(): Response
+    public function handle(?Request $request = null): Response
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
 
         try {
-            $request = Request::capture();
+            $request = $request ?? Request::capture();
             return $this->router->dispatch($request);
         } catch (Throwable $throwable) {
             $payload = ['error' => 'Server Error'];

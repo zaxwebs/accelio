@@ -24,6 +24,17 @@ Use Accelio when you want:
 
 - PHP `^8.3`
 - Composer
+- Pest PHP (for testing)
+
+## Testing
+
+Run the test suite with:
+
+```bash
+composer test
+```
+
+See [LLM_TESTING_GUIDE.md](LLM_TESTING_GUIDE.md) for detailed testing instructions.
 
 ## Quick start
 

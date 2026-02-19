@@ -47,6 +47,31 @@ final class Request
         );
     }
 
+    /**
+     * @param array<string, mixed> $body
+     * @param array<string, string> $headers
+     */
+    public static function create(string $method, string $uri, array $body = [], array $headers = []): self
+    {
+        $components = parse_url($uri);
+        $path = $components['path'] ?? '/';
+        $query = [];
+
+        if (isset($components['query'])) {
+            parse_str($components['query'], $query);
+        }
+
+        return new self(
+            method: strtoupper($method),
+            path: $path,
+            query: $query,
+            body: $body,
+            server: [],
+            headers: $headers,
+            rawBody: '',
+        );
+    }
+
     public function withRouteParams(array $routeParams): self
     {
         $clone = clone $this;
