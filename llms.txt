@@ -1,0 +1,52 @@
+# llms.txt
+
+Project: Accelio
+Repository root: /
+Primary language: PHP (>=8.4)
+Purpose: A minimal, LLM-friendly PHP framework for API-first and traditional web apps.
+
+## Quick start
+- Install dependencies: `composer install`
+- Run local server: `php -S localhost:8000 -t public`
+- App entrypoint: `public/index.php`
+
+## Architecture overview
+- `src/Core/Application.php`: bootstraps configuration, container, router, and kernel.
+- `src/Core/Kernel.php`: handles request lifecycle and dispatches routes.
+- `src/Core/Router.php`: registers routes, path parameter matching, and method handling.
+- `src/Core/Container.php`: lightweight dependency container for class resolution.
+- `src/Core/View.php`: PHP template rendering from `resources/views`.
+- `src/Http/Request.php`: request abstraction (query/body/session/route params).
+- `src/Http/Response.php`: response + helpers (HTML/JSON/redirect/status helpers).
+- `src/Support/helpers.php`: global helper functions (`view`, `json`, `redirect`, etc.).
+
+## Key directories
+- `config/app.php`: app configuration values.
+- `routes/web.php`: route definitions (plain callable handlers).
+- `resources/views/`: PHP view templates.
+- `tests/`: smoke and web flow scripts.
+
+## Framework conventions (important for LLM agents)
+- Keep handlers as explicit callables in `routes/web.php`.
+- Prefer type-hinted dependencies in route closures, especially `Request`.
+- Keep behavior explicit: avoid hidden magic or side effects.
+- Add views under `resources/views/*.php` and render via `view('<name>', $data)`.
+- Use response helpers for consistency: `json`, `created`, `no_content`, `redirect`, `back`.
+
+## Typical tasks
+- Add page route:
+  1. Create a template in `resources/views/`.
+  2. Register a GET route in `routes/web.php` returning `view(...)`.
+- Add JSON endpoint:
+  1. Register route in `routes/web.php`.
+  2. Read input from `Request` (`input`, `body`, `all`).
+  3. Return `json(...)` or `created(...)`.
+
+## Testing/checking
+- Run smoke checks: `php tests/smoke.php`
+- Run web flow checks: `php tests/web_flow.php`
+
+## Notes for code generation
+- Follow the existing small-file, one-class-per-file style.
+- Maintain compatibility with PHP 8.4 baseline from `composer.json`.
+- Prefer minimal, readable implementations over abstractions.
