@@ -96,35 +96,6 @@ Built-in helpers include:
 - `created()`
 - `no_content()`
 
-## Usage examples
-
-### Server-rendered page
-
-```php
-$router->get('/', fn () => view('welcome', ['name' => 'Accelio']));
-```
-
-### Form handling with PRG
-
-```php
-$router->post('/submit', function (Request $request) {
-    if (!$request->input('name')) {
-        $request->flash();
-
-        return redirect('/')->with('message', 'Name required.');
-    }
-
-    return redirect('/hello/' . $request->input('name'));
-});
-```
-
-### JSON endpoint
-
-```php
-$router->post('/api/echo', fn (Request $request) => created([
-    'received' => $request->body(),
-]));
-```
 
 ## Development workflow recommendations
 

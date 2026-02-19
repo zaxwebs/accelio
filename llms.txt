@@ -25,7 +25,7 @@ Purpose: A lightweight, LLM-friendly PHP framework for API-first and traditional
 - `routes/web.php`: route definitions (callable handlers).
 - `resources/views/`: PHP view templates.
 - `public/`: web root and front controller.
-- `tests/`: smoke and web-flow checks.
+- `tests/`: Pest test suite (Unit and Feature).
 
 ## Framework conventions (important for LLM agents)
 - Keep handlers explicit and readable in `routes/web.php`.
@@ -45,8 +45,7 @@ Purpose: A lightweight, LLM-friendly PHP framework for API-first and traditional
   3. Return `json(...)` or `created(...)`.
 
 ## Testing/checking
-- Run smoke checks: `php tests/smoke.php`
-- Run web-flow checks: `php tests/web_flow.php`
+- Run tests: `composer test` or `vendor/bin/pest`
 
 ## Notes for code generation
 - Preserve compatibility with PHP 8.3 baseline in `composer.json`.
