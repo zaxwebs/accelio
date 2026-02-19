@@ -1,19 +1,29 @@
 # Accelio
 
-Accelio is a **modern, lean PHP framework** optimized for **AI-assisted development**, now supporting both **API-first** and **traditional web development** workflows.
+Accelio is a lightweight PHP framework designed for teams building web and API applications with AI-assisted workflows.
 
-- **Small surface area** so LLMs can reason across the whole codebase quickly.
-- **Convention-first folder layout** with explicit class names.
-- **No magic**: route handlers are plain callables, services are explicit, and config is simple arrays.
-- **Type-safe signatures** and docblocks that are easy for code models to infer.
-- **Built for modern PHP** with a PHP `^8.3` runtime baseline.
+It emphasizes predictable structure, explicit behavior, and small abstractions so both developers and coding agents can understand and extend code quickly.
 
-## Why this is LLM-friendly
+## Highlights
 
-1. Predictable file paths (`routes/web.php`, `config/app.php`, `src/Http/*`, `resources/views/*`).
-2. Minimal indirection (single `Kernel` + `Router` + `Container`).
-3. Copy/paste-ready patterns for routes, services, and views.
-4. Built-in session and view rendering support.
+- **AI-friendly architecture**: low indirection and explicit conventions reduce reasoning overhead for LLM-based tooling.
+- **Modern PHP baseline**: built for **PHP 8.3+**.
+- **Dual delivery model**: supports both traditional server-rendered pages and JSON APIs.
+- **Practical HTTP helpers**: ergonomic request/response APIs for forms, redirects, sessions, and APIs.
+- **Minimal core**: clear separation between routing, container, kernel, request, and response layers.
+
+## Best fit
+
+Use Accelio when you want:
+
+- A clean starting point for internal tools, MVPs, and API backends.
+- Full control over application flow without heavy framework magic.
+- A repository shape that is easy for humans and AI agents to navigate.
+
+## Requirements
+
+- PHP `^8.3`
+- Composer
 
 ## Quick start
 
@@ -22,9 +32,9 @@ composer install
 php -S localhost:8000 -t public
 ```
 
-Open <http://localhost:8000>.
+Then open <http://localhost:8000>.
 
-## Project structure
+## Project layout
 
 ```txt
 config/
@@ -32,7 +42,7 @@ config/
 public/
   index.php
 resources/
-  views/          <-- PHP templates
+  views/
 routes/
   web.php
 src/
@@ -41,68 +51,78 @@ src/
     Container.php
     Kernel.php
     Router.php
-    View.php      <-- Template engine
+    View.php
   Http/
-    Request.php   <-- Session & input helpers
-    Response.php  <-- Redirect & HTML helpers
+    Request.php
+    Response.php
   Support/
     helpers.php
+tests/
 ```
 
-## Features included
+## Core capabilities
 
-- **Traditional Web**: View rendering, global sessions, and PRG (Post-Redirect-Get) support.
-- **API-First**: JSON body parsing, route parameters, and header lookups.
-- **Route params**: `/users/{id}` then either `$request->route('id')` or typed closure args (`fn (string $id) => ...`).
-- **Query + body merge**: Access via `$request->all()` or `$request->input('key')`.
-- **Response helpers**: `json()`, `view()`, `redirect()`, `back()`, `created()`, and `no_content()`.
-- **HTTP verbs**: `GET`, `POST`, `PUT`, `PATCH`, and `DELETE` with automatic `405 Method Not Allowed` responses.
+### Routing
 
-## Common Examples
+- Supports `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`.
+- Provides automatic `405 Method Not Allowed` responses when a route exists for a different method.
+- Supports route parameters such as `/users/{id}` with access via route bindings or typed closure arguments.
 
-### Rendering a View
+### Request handling
 
-Create `resources/views/welcome.php`:
-```php
-<h1>Welcome to <?= $name ?></h1>
-```
+- Query string and request body accessors.
+- JSON request body parsing for API endpoints.
+- Session-backed input flashing for post/redirect/get workflows.
 
-Edit `routes/web.php`:
+### Response helpers
+
+Built-in helpers include:
+
+- `json()`
+- `view()`
+- `redirect()`
+- `back()`
+- `created()`
+- `no_content()`
+
+## Usage examples
+
+### Server-rendered page
+
 ```php
 $router->get('/', fn () => view('welcome', ['name' => 'Accelio']));
 ```
 
-### Form Handling & Redirects (PRG)
+### Form handling with PRG
 
 ```php
 $router->post('/submit', function (Request $request) {
     if (!$request->input('name')) {
-        $request->flash(); // Persist input for old()
-        return redirect('/')->with('message', 'Name required!');
+        $request->flash();
+
+        return redirect('/')->with('message', 'Name required.');
     }
+
     return redirect('/hello/' . $request->input('name'));
 });
-
-$router->get('/hello/{name}', fn (Request $request) => view('hello', [
-    'nickname' => $request->route('name')
-]));
 ```
 
-### JSON API
+### JSON endpoint
 
 ```php
-$router->get('/api/health', fn () => json(['ok' => true]));
-
 $router->post('/api/echo', fn (Request $request) => created([
     'received' => $request->body(),
 ]));
 ```
 
-## AI workflow tips
+## Development workflow recommendations
 
-- Ask your coding assistant to "create a route and a view using existing helpers".
-- Keep features in small files with one class each.
-- Use `Request $request` type hinting in route closures for better autocompletion.
+To keep Accelio optimized for AI-assisted implementation tasks:
+
+1. Keep features small and focused (one concern per class/file).
+2. Prefer explicit dependencies and typed signatures.
+3. Reuse existing helpers before introducing new abstractions.
+4. Keep routing intent readable and colocate related view/API handlers.
 
 ## License
 
