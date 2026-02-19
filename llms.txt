@@ -1,9 +1,9 @@
 # llms.txt
 
 Project: Accelio
-Repository root: /
+Repository root: /workspace/accelio
 Primary language: PHP (>=8.3)
-Purpose: A minimal, LLM-friendly PHP framework for API-first and traditional web apps.
+Purpose: A lightweight, LLM-friendly PHP framework for API-first and traditional web apps.
 
 ## Quick start
 - Install dependencies: `composer install`
@@ -12,26 +12,28 @@ Purpose: A minimal, LLM-friendly PHP framework for API-first and traditional web
 
 ## Architecture overview
 - `src/Core/Application.php`: bootstraps configuration, container, router, and kernel.
-- `src/Core/Kernel.php`: handles request lifecycle and dispatches routes.
-- `src/Core/Router.php`: registers routes, path parameter matching, and method handling.
+- `src/Core/Kernel.php`: handles request lifecycle and route dispatching.
+- `src/Core/Router.php`: route registration, path-parameter matching, and method handling (including 405 responses).
 - `src/Core/Container.php`: lightweight dependency container for class resolution.
 - `src/Core/View.php`: PHP template rendering from `resources/views`.
-- `src/Http/Request.php`: request abstraction (query/body/session/route params).
-- `src/Http/Response.php`: response + helpers (HTML/JSON/redirect/status helpers).
-- `src/Support/helpers.php`: global helper functions (`view`, `json`, `redirect`, etc.).
+- `src/Http/Request.php`: request abstraction (query/body/session/route params + flash helpers).
+- `src/Http/Response.php`: response object with HTML/JSON/redirect/status helpers.
+- `src/Support/helpers.php`: global helper functions (`view`, `json`, `redirect`, `back`, `created`, `no_content`).
 
 ## Key directories
-- `config/app.php`: app configuration values.
-- `routes/web.php`: route definitions (plain callable handlers).
+- `config/app.php`: application configuration values.
+- `routes/web.php`: route definitions (callable handlers).
 - `resources/views/`: PHP view templates.
-- `tests/`: smoke and web flow scripts.
+- `public/`: web root and front controller.
+- `tests/`: smoke and web-flow checks.
 
 ## Framework conventions (important for LLM agents)
-- Keep handlers as explicit callables in `routes/web.php`.
-- Prefer type-hinted dependencies in route closures, especially `Request`.
-- Keep behavior explicit: avoid hidden magic or side effects.
-- Add views under `resources/views/*.php` and render via `view('<name>', $data)`.
-- Use response helpers for consistency: `json`, `created`, `no_content`, `redirect`, `back`.
+- Keep handlers explicit and readable in `routes/web.php`.
+- Prefer typed dependencies in route closures, especially `Request`.
+- Keep behavior explicit; avoid hidden magic and unnecessary indirection.
+- Add templates to `resources/views/*.php` and render with `view('<name>', $data)`.
+- Prefer response helpers for consistency: `json`, `created`, `no_content`, `redirect`, `back`.
+- Keep files focused (one class/concern per file).
 
 ## Typical tasks
 - Add page route:
@@ -44,9 +46,9 @@ Purpose: A minimal, LLM-friendly PHP framework for API-first and traditional web
 
 ## Testing/checking
 - Run smoke checks: `php tests/smoke.php`
-- Run web flow checks: `php tests/web_flow.php`
+- Run web-flow checks: `php tests/web_flow.php`
 
 ## Notes for code generation
-- Follow the existing small-file, one-class-per-file style.
-- Maintain compatibility with PHP 8.3 baseline from `composer.json`.
-- Prefer minimal, readable implementations over abstractions.
+- Preserve compatibility with PHP 8.3 baseline in `composer.json`.
+- Prefer minimal, readable implementations over abstraction-heavy designs.
+- Keep routing and request/response behavior straightforward for both humans and coding agents.
