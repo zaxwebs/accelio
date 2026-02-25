@@ -1,110 +1,99 @@
 # Accelio
 
-Accelio is a lightweight PHP framework designed for teams building web and API applications with AI-assisted workflows.
+A lightweight PHP 8.3+ framework for web and API apps, designed for both developers and AI agents.
 
-It emphasizes predictable structure, explicit behavior, and small abstractions so both developers and coding agents can understand and extend code quickly.
+Predictable structure, explicit behavior, small abstractions — easy to understand and extend for humans and coding agents alike.
 
-## Highlights
-
-- **AI-friendly architecture**: low indirection and explicit conventions reduce reasoning overhead for LLM-based tooling.
-- **Modern PHP baseline**: built for **PHP 8.3+**.
-- **Dual delivery model**: supports both traditional server-rendered pages and JSON APIs.
-- **Practical HTTP helpers**: ergonomic request/response APIs for forms, redirects, sessions, and APIs.
-- **Minimal core**: clear separation between routing, container, kernel, request, and response layers.
-
-## Best fit
-
-Use Accelio when you want:
-
-- A clean starting point for internal tools, MVPs, and API backends.
-- Full control over application flow without heavy framework magic.
-- A repository shape that is easy for humans and AI agents to navigate.
-
-## Requirements
-
-- PHP `^8.3`
-- Composer
-- Pest PHP (for testing)
-
-## Testing
-
-Run the test suite with:
-
-```bash
-composer test
-```
-
-
-
-## Quick start
+## Quick Start
 
 ```bash
 composer install
 php -S localhost:8000 -t public
 ```
 
-Then open <http://localhost:8000>.
+Then open <http://localhost:8000>. Run tests with `composer test`.
 
-## Project layout
+## Project Layout
 
-```txt
-config/
-  app.php
-public/
-  index.php
-resources/
-  views/
-routes/
-  web.php
+```
 src/
-  Core/
-    Application.php
-    Container.php
-    Kernel.php
-    Router.php
-    View.php
-  Http/
-    Request.php
-    Response.php
-  Support/
-    helpers.php
-tests/
+  Core/          Application, Config, Container, Environment, Kernel, Router, View
+  Http/          Request, Response, Method, Middleware, Pipeline
+  Error/         ErrorCode
+  Support/       helpers.php
+config/app.php   App configuration
+routes/web.php   Route definitions
+resources/views/ PHP templates
+public/index.php Entrypoint
+tests/           Pest test suite
 ```
 
-## Core capabilities
+## Architecture
 
-### Routing
+| File | Role |
+|------|------|
+| `Application.php` | Bootstraps typed `Config`, container, kernel |
+| `Config.php` | Readonly value object with `Environment` enum |
+| `Kernel.php` | Request lifecycle, middleware pipeline, trace IDs, security headers |
+| `Router.php` | Route registration (`Method` enum), path params, structured 404/405 |
+| `Container.php` | DI container — `bind`, `singleton`, `make`, `has` |
+| `View.php` | Template rendering, isolated scope, directory traversal prevention |
+| `Request.php` | Query/body/session/route params, flash helpers, bearer token |
+| `Response.php` | HTML/JSON/redirect/error factories |
+| `Method.php` | HTTP method enum (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS) |
+| `Middleware.php` | Middleware interface (`handle` + `$next` pattern) |
+| `Pipeline.php` | Chains middleware around a core handler |
+| `ErrorCode.php` | Machine-readable error codes with HTTP status mapping |
+| `helpers.php` | `view`, `json`, `redirect`, `back`, `created`, `no_content`, `e`, `csrf_token`, `csrf_field` |
 
-- Supports `GET`, `POST`, `PUT`, `PATCH`, and `DELETE`.
-- Provides automatic `405 Method Not Allowed` responses when a route exists for a different method.
-- Supports route parameters such as `/users/{id}` with access via route bindings or typed closure arguments.
+## Routing
 
-### Request handling
+```php
+$router->get('/users/{id}', function (Request $request, $id) {
+    return json(['id' => $id]);
+});
+```
 
-- Query string and request body accessors.
-- JSON request body parsing for API endpoints.
-- Session-backed input flashing for post/redirect/get workflows.
+Supports `GET`, `POST`, `PUT`, `PATCH`, `DELETE`. Returns structured `405` with `Allow` header when method is wrong.
 
-### Response helpers
+## Error Responses
 
-Built-in helpers include:
+All errors use a consistent envelope:
 
-- `json()`
-- `view()`
-- `redirect()`
-- `back()`
-- `created()`
-- `no_content()`
+```json
+{"ok": false, "error": {"code": "ROUTE_NOT_FOUND", "message": "No route matches GET /path."}}
+```
 
+Codes: `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `VALIDATION_FAILED`, `INTERNAL_ERROR`, `UNAUTHORIZED`, `FORBIDDEN`, `RATE_LIMITED`, `CSRF_MISMATCH`.
 
-## Development workflow recommendations
+## Middleware
 
-To keep Accelio optimized for AI-assisted implementation tasks:
+```php
+$kernel->middleware(new MyMiddleware());
+```
 
-1. Keep features small and focused (one concern per class/file).
-2. Prefer explicit dependencies and typed signatures.
-3. Reuse existing helpers before introducing new abstractions.
-4. Keep routing intent readable and colocate related view/API handlers.
+Implement `Accelio\Http\Middleware` with `handle(Request $request, Closure $next): Response`.
+
+## Typical Tasks
+
+**Add a page:** create `resources/views/mypage.php`, then `$router->get('/mypage', fn() => view('mypage'))`.
+
+**Add a JSON endpoint:** `$router->post('/api/items', fn(Request $r) => created(['id' => 1]))`.
+
+**Add middleware:** create a class implementing `Middleware`, register via `$kernel->middleware(...)`.
+
+## Conventions
+
+- One concern per file. Keep handlers readable in `routes/web.php`.
+- Use `e($value)` in templates for XSS-safe output.
+- Use `Response::error(ErrorCode::case, 'message')` for structured errors.
+- Prefer helpers (`json`, `created`, `redirect`, `back`) for consistency.
+- All responses automatically include `X-Trace-Id` and security headers.
+- PHP 8.3 baseline — use strict types, enums, readonly classes.
+
+## Requirements
+
+- PHP `^8.3`, Composer, Pest PHP (dev)
 
 ## License
 

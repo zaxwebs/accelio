@@ -1,7 +1,6 @@
 <?php
 
 use Accelio\Core\Container;
-use Accelio\Core\Application;
 
 beforeEach(function () {
     $this->container = new Container();
@@ -30,4 +29,32 @@ test('it throws exception if service is not instantiable', function () {
     $this->container->bind('non_existent', 'NonExistentClass');
 
     expect(fn () => $this->container->get('non_existent'))->toThrow(InvalidArgumentException::class);
+});
+
+test('bind creates new instances on each make() call', function () {
+    $this->container->bind('fresh', function () {
+        return new stdClass();
+    });
+
+    $a = $this->container->make('fresh');
+    $b = $this->container->make('fresh');
+
+    expect($a)->not->toBe($b);
+});
+
+test('has returns true for registered bindings', function () {
+    $this->container->bind('exists', fn () => new stdClass());
+
+    expect($this->container->has('exists'))->toBeTrue()
+        ->and($this->container->has('missing'))->toBeFalse();
+});
+
+test('singleton with object instance is returned directly', function () {
+    $obj = new stdClass();
+    $obj->tag = 'singleton-test';
+
+    $this->container->singleton('direct', $obj);
+
+    expect($this->container->get('direct'))->toBe($obj)
+        ->and($this->container->get('direct')->tag)->toBe('singleton-test');
 });

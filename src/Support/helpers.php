@@ -31,14 +31,14 @@ if (!function_exists('created')) {
     }
 }
 
-if ( ! function_exists('no_content')) {
+if (!function_exists('no_content')) {
     function no_content(): Response
     {
         return response('', 204);
     }
 }
 
-if ( ! function_exists('view')) {
+if (!function_exists('view')) {
     /**
      * @param array<string, mixed> $data
      */
@@ -51,14 +51,14 @@ if ( ! function_exists('view')) {
     }
 }
 
-if ( ! function_exists('redirect')) {
+if (!function_exists('redirect')) {
     function redirect(string $url, int $status = 302): Response
     {
         return Response::redirect($url, $status);
     }
 }
 
-if ( ! function_exists('back')) {
+if (!function_exists('back')) {
     function back(int $status = 302): Response
     {
         $url = $_SERVER['HTTP_REFERER'] ?? '/';
@@ -67,7 +67,7 @@ if ( ! function_exists('back')) {
     }
 }
 
-if ( ! function_exists('session')) {
+if (!function_exists('session')) {
     function session(string $key = null, mixed $default = null): mixed
     {
         if ($key === null) {
@@ -78,9 +78,45 @@ if ( ! function_exists('session')) {
     }
 }
 
-if ( ! function_exists('old')) {
+if (!function_exists('old')) {
     function old(string $key, mixed $default = null): mixed
     {
         return $_SESSION['_old'][$key] ?? $default;
+    }
+}
+
+if (!function_exists('e')) {
+    /**
+     * Escape HTML entities for safe output in views.
+     */
+    function e(?string $value): string
+    {
+        return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+}
+
+if (!function_exists('csrf_token')) {
+    /**
+     * Get or generate the CSRF token for the current session.
+     */
+    function csrf_token(): string
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return '';
+        }
+
+        $_SESSION['_csrf_token'] ??= bin2hex(random_bytes(32));
+
+        return $_SESSION['_csrf_token'];
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    /**
+     * Generate a hidden input field containing the CSRF token.
+     */
+    function csrf_field(): string
+    {
+        return '<input type="hidden" name="_token" value="' . e(csrf_token()) . '">';
     }
 }

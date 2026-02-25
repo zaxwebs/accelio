@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Accelio\Core;
 
+use Accelio\Error\ErrorCode;
+use Accelio\Http\Method;
 use Accelio\Http\Request;
 use Accelio\Http\Response;
 use ReflectionFunction;
@@ -23,33 +25,33 @@ final class Router
 
     public function get(string $path, callable $handler): void
     {
-        $this->add('GET', $path, $handler);
+        $this->add(Method::Get, $path, $handler);
     }
 
     public function post(string $path, callable $handler): void
     {
-        $this->add('POST', $path, $handler);
+        $this->add(Method::Post, $path, $handler);
     }
 
     public function put(string $path, callable $handler): void
     {
-        $this->add('PUT', $path, $handler);
+        $this->add(Method::Put, $path, $handler);
     }
 
     public function patch(string $path, callable $handler): void
     {
-        $this->add('PATCH', $path, $handler);
+        $this->add(Method::Patch, $path, $handler);
     }
 
     public function delete(string $path, callable $handler): void
     {
-        $this->add('DELETE', $path, $handler);
+        $this->add(Method::Delete, $path, $handler);
     }
 
-    public function add(string $method, string $path, callable $handler): void
+    public function add(Method|string $method, string $path, callable $handler): void
     {
-        $method = strtoupper($method);
-        $this->routes[$method][] = ['path' => $this->normalizePath($path), 'handler' => $handler];
+        $key = $method instanceof Method ? $method->value : strtoupper($method);
+        $this->routes[$key][] = ['path' => $this->normalizePath($path), 'handler' => $handler];
     }
 
     public function dispatch(Request $request): Response
@@ -70,19 +72,16 @@ final class Router
 
         $allowed = $this->allowedMethodsForPath($path);
         if ($allowed !== []) {
-            return Response::json([
-                'error' => 'Method Not Allowed',
-                'method' => $method,
-                'path' => $path,
-                'allowed' => $allowed,
-            ], 405)->withHeader('Allow', implode(', ', $allowed));
+            return Response::error(
+                ErrorCode::MethodNotAllowed,
+                "Method {$method} is not allowed for {$path}. Allowed: " . implode(', ', $allowed),
+            )->withHeader('Allow', implode(', ', $allowed));
         }
 
-        return Response::json([
-            'error' => 'Not Found',
-            'method' => $method,
-            'path' => $path,
-        ], 404);
+        return Response::error(
+            ErrorCode::RouteNotFound,
+            "No route matches {$method} {$path}.",
+        );
     }
 
     /**

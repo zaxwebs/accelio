@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Accelio\Http;
 
+use Accelio\Error\ErrorCode;
+
 final class Response
 {
     /**
@@ -32,6 +34,28 @@ final class Response
             status: $status,
             headers: ['Content-Type' => 'application/json; charset=utf-8'],
         );
+    }
+
+    /**
+     * Create a structured error response using an ErrorCode enum.
+     *
+     * @param array<string, mixed> $details Additional context for the error.
+     */
+    public static function error(ErrorCode $code, string $message, array $details = []): self
+    {
+        $body = [
+            'ok' => false,
+            'error' => [
+                'code' => $code->value,
+                'message' => $message,
+            ],
+        ];
+
+        if ($details !== []) {
+            $body['error']['details'] = $details;
+        }
+
+        return self::json($body, $code->httpStatus());
     }
 
     public static function redirect(string $url, int $status = 302): self
@@ -74,6 +98,11 @@ final class Response
     public function withHeaders(array $headers): self
     {
         return new self($this->content, $this->status, [...$this->headers, ...$headers]);
+    }
+
+    public function withStatus(int $status): self
+    {
+        return new self($this->content, $status, $this->headers);
     }
 
     public function send(): void

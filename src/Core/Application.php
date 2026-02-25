@@ -7,16 +7,18 @@ namespace Accelio\Core;
 final class Application
 {
     private static ?Application $instance = null;
-    private array $config;
+    private readonly Config $config;
 
     public function __construct(
         private readonly string $basePath,
         private readonly Container $container = new Container(),
     ) {
         self::$instance = $this;
-        $this->config = require $this->basePath . '/config/app.php';
 
-        date_default_timezone_set($this->config['timezone'] ?? 'UTC');
+        $raw = require $this->basePath . '/config/app.php';
+        $this->config = Config::fromArray($raw);
+
+        date_default_timezone_set($this->config->timezone);
     }
 
     public static function getInstance(): Application
@@ -38,8 +40,19 @@ final class Application
         return $this->container;
     }
 
+    /**
+     * Retrieve a configuration value by key.
+     */
     public function config(string $key, mixed $default = null): mixed
     {
-        return $this->config[$key] ?? $default;
+        return $this->config->get($key, $default);
+    }
+
+    /**
+     * Access the typed Config object directly.
+     */
+    public function configuration(): Config
+    {
+        return $this->config;
     }
 }

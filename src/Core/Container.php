@@ -15,6 +15,9 @@ final class Container
     /** @var array<string, object> */
     private array $singletons = [];
 
+    /** @var array<string, true> */
+    private array $singletonIds = [];
+
     public function bind(string $id, object|string $concrete): void
     {
         $this->bindings[$id] = $concrete;
@@ -23,10 +26,16 @@ final class Container
     public function singleton(string $id, object|string $concrete): void
     {
         $this->bind($id, $concrete);
+        $this->singletonIds[$id] = true;
 
         if (is_object($concrete) && !($concrete instanceof Closure)) {
             $this->singletons[$id] = $concrete;
         }
+    }
+
+    public function has(string $id): bool
+    {
+        return isset($this->bindings[$id]) || isset($this->singletons[$id]);
     }
 
     public function get(string $id): object
@@ -36,7 +45,10 @@ final class Container
         }
 
         $resolved = $this->resolve($id);
-        $this->singletons[$id] = $resolved;
+
+        if (isset($this->singletonIds[$id])) {
+            $this->singletons[$id] = $resolved;
+        }
 
         return $resolved;
     }
