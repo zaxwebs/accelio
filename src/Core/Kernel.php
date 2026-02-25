@@ -72,15 +72,41 @@ final class Kernel
                 fn (Request $req): Response => $this->router->dispatch($req),
             );
 
-            return $this->applyStandardHeaders($response, $traceId);
+            return $this->applyStandardHeaders(
+                $this->negotiateErrorResponse($request, $response),
+                $traceId,
+            );
         } catch (Throwable $throwable) {
+            $request = $request ?? Request::capture();
             $error = Response::error(
                 ErrorCode::InternalError,
                 $this->app->config('debug') ? $throwable->getMessage() : 'Internal Server Error',
             );
 
-            return $this->applyStandardHeaders($error, $traceId ?? bin2hex(random_bytes(8)));
+            return $this->applyStandardHeaders(
+                $this->negotiateErrorResponse($request, $error),
+                $traceId ?? bin2hex(random_bytes(8)),
+            );
         }
+    }
+
+    private function negotiateErrorResponse(Request $request, Response $response): Response
+    {
+        if ($response->status() < 400 || $request->wantsJson()) {
+            return $response;
+        }
+
+        $body = json_decode($response->content(), true);
+        $errorData = $body['error'] ?? [];
+
+        $view = new View($this->app->basePath());
+        $html = $view->render('errors.error', [
+            'status' => $response->status(),
+            'code' => $errorData['code'] ?? 'ERROR',
+            'message' => $errorData['message'] ?? 'An unexpected error occurred.',
+        ]);
+
+        return Response::html($html, $response->status());
     }
 
     private function applyStandardHeaders(Response $response, string $traceId): Response

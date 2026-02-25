@@ -15,14 +15,35 @@ test('home page contains welcome message', function () {
         ->and($response->content())->toContain('Lean PHP framework');
 });
 
-test('404 returns structured error', function () {
-    $response = $this->get('/non-existent-page');
+test('404 returns structured JSON error for API requests', function () {
+    $response = $this->get('/non-existent-page', ['accept' => 'application/json']);
 
     expect($response->status())->toBe(404);
 
     $body = json_decode($response->content(), true);
     expect($body['ok'])->toBeFalse()
         ->and($body['error']['code'])->toBe('ROUTE_NOT_FOUND');
+});
+
+test('404 returns HTML for browser requests', function () {
+    $response = $this->get('/non-existent-page');
+
+    expect($response->status())->toBe(404)
+        ->and($response->header('Content-Type'))->toContain('text/html')
+        ->and($response->content())->toContain('404')
+        ->and($response->content())->toContain('ROUTE_NOT_FOUND');
+});
+
+test('500 returns HTML for browser requests', function () {
+    $this->kernel->router()->get('/boom', function () {
+        throw new \RuntimeException('Test explosion');
+    });
+
+    $response = $this->call('GET', '/boom');
+
+    expect($response->status())->toBe(500)
+        ->and($response->header('Content-Type'))->toContain('text/html')
+        ->and($response->content())->toContain('500');
 });
 
 test('responses include trace id header', function () {
