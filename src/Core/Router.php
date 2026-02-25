@@ -14,41 +14,43 @@ use ReflectionNamedType;
 
 final class Router
 {
-    /** @var array<string, array<int, array{path: string, handler: callable}>> */
+    /** @var array<string, array<int, array{path: string, handler: callable|array|string}>> */
     private array $routes = [];
 
-    /** @return array<string, array<int, array{path: string, handler: callable}>> */
+    public function __construct(private readonly ?Container $container = null) {}
+
+    /** @return array<string, array<int, array{path: string, handler: callable|array|string}>> */
     public function getRoutes(): array
     {
         return $this->routes;
     }
 
-    public function get(string $path, callable $handler): void
+    public function get(string $path, callable|array|string $handler): void
     {
         $this->add(Method::Get, $path, $handler);
     }
 
-    public function post(string $path, callable $handler): void
+    public function post(string $path, callable|array|string $handler): void
     {
         $this->add(Method::Post, $path, $handler);
     }
 
-    public function put(string $path, callable $handler): void
+    public function put(string $path, callable|array|string $handler): void
     {
         $this->add(Method::Put, $path, $handler);
     }
 
-    public function patch(string $path, callable $handler): void
+    public function patch(string $path, callable|array|string $handler): void
     {
         $this->add(Method::Patch, $path, $handler);
     }
 
-    public function delete(string $path, callable $handler): void
+    public function delete(string $path, callable|array|string $handler): void
     {
         $this->add(Method::Delete, $path, $handler);
     }
 
-    public function add(Method|string $method, string $path, callable $handler): void
+    public function add(Method|string $method, string $path, callable|array|string $handler): void
     {
         $key = $method instanceof Method ? $method->value : strtoupper($method);
         $this->routes[$key][] = ['path' => $this->normalizePath($path), 'handler' => $handler];
@@ -87,12 +89,14 @@ final class Router
     /**
      * @param array<string, string> $params
      */
-    private function invokeHandler(callable $handler, Request $request, array $params): mixed
+    private function invokeHandler(callable|array|string $handler, Request $request, array $params): mixed
     {
-        if (is_array($handler)) {
-            $reflection = new ReflectionMethod($handler[0], $handler[1]);
+        $resolved = $this->resolveHandler($handler);
+
+        if (is_array($resolved)) {
+            $reflection = new ReflectionMethod($resolved[0], $resolved[1]);
         } else {
-            $reflection = new ReflectionFunction($handler);
+            $reflection = new ReflectionFunction($resolved);
         }
 
         $args = [];
@@ -118,7 +122,26 @@ final class Router
             $args[] = null;
         }
 
-        return $handler(...$args);
+        return $resolved(...$args);
+    }
+
+    private function resolveHandler(callable|array|string $handler): callable
+    {
+        if (is_callable($handler)) {
+            return $handler;
+        }
+
+        if (is_string($handler) && str_contains($handler, '@')) {
+            [$class, $method] = explode('@', $handler, 2);
+            $handler = [$class, $method];
+        }
+
+        if (is_array($handler) && count($handler) === 2 && is_string($handler[0]) && is_string($handler[1])) {
+            $instance = $this->container?->get($handler[0]) ?? new $handler[0]();
+            return [$instance, $handler[1]];
+        }
+
+        throw new \InvalidArgumentException('Route handler is not callable.');
     }
 
     private function normalizeResponse(mixed $result): Response

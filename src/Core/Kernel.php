@@ -26,7 +26,7 @@ final class Kernel
 
     public function __construct(private readonly Application $app)
     {
-        $this->router = new Router();
+        $this->router = new Router($app->container());
         $this->pipeline = new Pipeline();
 
         $app = $this->app;

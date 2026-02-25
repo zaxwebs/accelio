@@ -1,5 +1,6 @@
 <?php
 
+use Accelio\Core\Container;
 use Accelio\Core\Router;
 use Accelio\Http\Request;
 use Accelio\Http\Response;
@@ -74,3 +75,48 @@ test('it handles multiple HTTP methods', function () {
     $routes = $this->router->getRoutes();
     expect($routes)->toHaveKeys(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 });
+
+test('it resolves class-string route handlers through the container', function () {
+    $container = new Container();
+    $router = new Router($container);
+
+    $router->get('/todos', [TestTodoController::class, 'index']);
+
+    $response = $router->dispatch(Request::create('GET', '/todos'));
+
+    expect($response->content())->toBe('todos from service');
+});
+
+test('it resolves string controller action handlers', function () {
+    $container = new Container();
+    $router = new Router($container);
+
+    $router->get('/todos/{id}', TestTodoController::class . '@show');
+
+    $response = $router->dispatch(Request::create('GET', '/todos/15'));
+
+    expect($response->content())->toBe('todo 15');
+});
+
+final class TestTodoController
+{
+    public function __construct(private readonly TestTodoService $service) {}
+
+    public function index(): string
+    {
+        return $this->service->message();
+    }
+
+    public function show(string $id): string
+    {
+        return "todo {$id}";
+    }
+}
+
+final class TestTodoService
+{
+    public function message(): string
+    {
+        return 'todos from service';
+    }
+}

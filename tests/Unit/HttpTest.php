@@ -28,3 +28,28 @@ it('creates json response', function () {
     expect($response->content())->toBe('{"foo":"bar"}')
         ->and($response->header('Content-Type'))->toContain('application/json');
 });
+
+it('creates json response from objects', function () {
+    $response = Response::json(new HttpTestJsonPayload('bar'));
+
+    expect($response->content())->toBe('{"foo":"bar"}');
+});
+
+it('returns all input data when no key is provided', function () {
+    $request = Request::create('POST', '/todos?filter=all', ['title' => 'Ship feature']);
+
+    expect($request->input())->toBe([
+        'filter' => 'all',
+        'title' => 'Ship feature',
+    ]);
+});
+
+final class HttpTestJsonPayload implements JsonSerializable
+{
+    public function __construct(private readonly string $foo) {}
+
+    public function jsonSerialize(): mixed
+    {
+        return ['foo' => $this->foo];
+    }
+}

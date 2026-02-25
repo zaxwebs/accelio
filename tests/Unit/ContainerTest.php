@@ -25,6 +25,13 @@ test('it can bind and resolve a singleton', function () {
     expect($instance1)->toBe($instance2);
 });
 
+test('it can auto resolve constructor dependencies', function () {
+    $resolved = $this->container->get(ContainerTestService::class);
+
+    expect($resolved)->toBeInstanceOf(ContainerTestService::class)
+        ->and($resolved->repository)->toBeInstanceOf(ContainerTestRepository::class);
+});
+
 test('it throws exception if service is not instantiable', function () {
     $this->container->bind('non_existent', 'NonExistentClass');
 
@@ -58,3 +65,12 @@ test('singleton with object instance is returned directly', function () {
     expect($this->container->get('direct'))->toBe($obj)
         ->and($this->container->get('direct')->tag)->toBe('singleton-test');
 });
+
+final class ContainerTestService
+{
+    public function __construct(public readonly ContainerTestRepository $repository) {}
+}
+
+final class ContainerTestRepository
+{
+}
